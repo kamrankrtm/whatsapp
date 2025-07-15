@@ -28,35 +28,29 @@ client.on('message', message => {
 
 app.post('/send-message', async (req, res) => {
     const { number, message, image_url } = req.body;
+
+    // Convert the number to the proper format
     const formattedNumber = `${number.replace(/^0/, '98')}@c.us`;
 
-    let errorOccurred = false;
-
-    // تلاش برای ارسال پیام متنی
     try {
+        // Send text message
         const sentMessage = await client.sendMessage(formattedNumber, message);
-        console.log('متن ارسال شد:', sentMessage);
-    } catch (error) {
-        errorOccurred = true;
-        console.error('خطا در ارسال پیام متنی:', error);
-    }
 
-    // تلاش برای ارسال عکس (در صورت وجود)
-    if (image_url) {
-        try {
-            const media = await MessageMedia.fromUrl(image_url);
-            const sentMedia = await client.sendMessage(formattedNumber, media, { caption: message });
-            console.log('عکس ارسال شد:', sentMedia);
-        } catch (imgErr) {
-            errorOccurred = true;
-            console.error('خطا در ارسال عکس:', imgErr);
+        // Send image if URL is provided
+        if (image_url) {
+            try {
+                const media = await MessageMedia.fromUrl(image_url);
+                await client.sendMessage(formattedNumber, media, { caption: message });
+            } catch (imgErr) {
+                console.error('Failed to send image:', imgErr);
+                // ??? ??? ??? ??? ?????? ? ???? ?????? ????? ???? ???? ?? ????????
+            }
         }
-    }
 
-    if (errorOccurred) {
-        res.json({ status: 'warning', message: 'پیام احتمالاً ارسال شده اما خطا رخ داده است!' });
-    } else {
-        res.json({ status: 'success', message: 'پیام با موفقیت ارسال شد!' });
+        res.json({ status: 'success', message: 'Message sent!' });
+    } catch (error) {
+        console.error('Failed to send message:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to send message', details: error.message });
     }
 });
 
